@@ -1,0 +1,31 @@
+[project]
+name = "aipos-backend"
+version = "0.1.0"
+description = "Backend service for AIPOS"
+requires-python = ">=3.14"
+
+dependencies = [
+    "fastapi>=0.116.1",
+    "uvicorn[standard]>=0.35.0",
+    "sqlalchemy>=2.0.43",
+    "psycopg[binary]>=3.2.9",
+    "redis>=6.4.0",
+    "pydantic-settings>=2.10.1",
+    "python-dotenv>=1.1.1",
+    "httpx>=0.28.1",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 88
+target-version = ["py314"]
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

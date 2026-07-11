@@ -61,13 +61,23 @@ def login_user(
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail="User not found",
         )
 
-    if not verify_password(
+    print("\n========== LOGIN DEBUG ==========")
+    print("Email:", email)
+    print("Entered Password:", password)
+    print("Stored Hash:", user.hashed_password)
+
+    is_valid = verify_password(
         password,
         user.hashed_password,
-    ):
+    )
+
+    print("Password Valid:", is_valid)
+    print("================================\n")
+
+    if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",

@@ -12,7 +12,7 @@ def save_memory(
     memory: MemoryCreate,
 ):
     """
-    Complete memory pipeline:
+    Complete memory pipeline.
 
     1. Save memory to PostgreSQL
     2. Generate embedding

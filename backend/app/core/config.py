@@ -2,30 +2,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # ==========================
-    # Application
-    # ==========================
     APP_NAME: str
     APP_VERSION: str
     APP_ENV: str
 
-    # ==========================
-    # Database
-    # ==========================
     DATABASE_URL: str
 
-    # ==========================
-    # JWT
-    # ==========================
-    JWT_SECRET: str
-    JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-
-    # ==========================
-    # AI
-    # ==========================
-    AI_PROVIDER: str = "mock"
     GEMINI_API_KEY: str
+
+    AI_PROVIDER: str
+
+    JWT_SECRET: str
+    JWT_ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+
+    QDRANT_HOST: str
+    QDRANT_PORT: int
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -9,6 +9,7 @@ from app.database.session import engine
 
 # Import models so SQLAlchemy knows about them
 from app.database.models.user import User
+from app.database.models.memory import Memory
 
 logger = setup_logging()
 

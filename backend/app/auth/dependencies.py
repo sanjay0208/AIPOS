@@ -3,12 +3,12 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
-from app.auth.config import SECRET_KEY, ALGORITHM
-from app.database.session import get_db
+from app.core.config import settings
 from app.database.models.user import User
+from app.database.session import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/api/v1/auth/login"
+    tokenUrl="/api/v1/auth/login",
 )
 
 
@@ -17,20 +17,22 @@ def get_current_user(
     db: Session = Depends(get_db),
 ):
     """
-    Verify JWT token and return current user.
+    Verify JWT token and return the current user.
     """
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
+        headers={
+            "WWW-Authenticate": "Bearer",
+        },
     )
 
     try:
         payload = jwt.decode(
             token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM],
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
         )
 
         email = payload.get("sub")

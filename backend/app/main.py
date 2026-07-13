@@ -1,15 +1,13 @@
 from fastapi import FastAPI
-
+from app.database.models.message import Message
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.logging import setup_logging
 
-from app.database.base import Base
-from app.database.session import engine
-
-# Import models so SQLAlchemy knows about them
-from app.database.models.user import User
+# Import models so Alembic can discover them
+from app.database.models.conversation import Conversation
 from app.database.models.memory import Memory
+from app.database.models.user import User
 
 logger = setup_logging()
 
@@ -18,9 +16,6 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="AI Personal Operating System",
 )
-
-# Create database tables (Development only)
-Base.metadata.create_all(bind=engine)
 
 # Register API routes
 app.include_router(api_router)

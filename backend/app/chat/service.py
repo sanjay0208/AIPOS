@@ -1,7 +1,15 @@
 from sqlalchemy.orm import Session
 
 from app.ai.manager import ai_manager
+from app.chat.prompt_builder import build_prompt
 from app.chat.schemas import ChatRequest
+from app.chat.title_generator import generate_title
+from app.conversations.message_service import MessageService
+from app.conversations.schemas import (
+    ConversationCreate,
+    MessageCreate,
+)
+from app.conversations.service import ConversationService
 from app.memory.deduplication import is_duplicate_memory
 from app.memory.extractor import extract_memory
 from app.memory.schemas import MemoryCreate
@@ -13,29 +21,65 @@ def process_chat(
     db: Session,
     request: ChatRequest,
     user_id: int,
-) -> str:
+) -> tuple[str, int]:
     """
-    Process a chat request using semantic memory retrieval,
-    automatic memory extraction, and duplicate detection.
+    Main chat pipeline.
     """
 
-    print("\n========== MEMORY PIPELINE ==========")
-    print("User ID:", user_id)
-    print("User Message:", request.message)
+    print("\n========== CHAT PIPELINE ==========")
 
     # ----------------------------------
-    # Step 1: Extract memory
+    # Conversation
+    # ----------------------------------
+
+    conversation_id = request.conversation_id
+
+    if conversation_id is None:
+
+        print("Generating conversation title...")
+
+        title = generate_title(
+            request.message
+        )
+
+        print(f"Generated Title: {title}")
+
+        conversation = ConversationService.create_conversation(
+            db=db,
+            user_id=user_id,
+            data=ConversationCreate(
+                title=title,
+            ),
+        )
+
+        conversation_id = conversation.id
+
+        print(f"Created Conversation: {conversation_id}")
+
+    else:
+
+        print(f"Using Conversation: {conversation_id}")
+
+    # ----------------------------------
+    # Save user message
+    # ----------------------------------
+
+    MessageService.create_message(
+        db=db,
+        conversation_id=conversation_id,
+        data=MessageCreate(
+            role="user",
+            content=request.message,
+        ),
+    )
+
+    # ----------------------------------
+    # Memory Extraction
     # ----------------------------------
 
     extracted_memory = extract_memory(
         request.message
     )
-
-    print("Extracted Memory:", extracted_memory)
-
-    # ----------------------------------
-    # Step 2: Duplicate detection
-    # ----------------------------------
 
     if extracted_memory:
 
@@ -44,11 +88,7 @@ def process_chat(
             user_id=user_id,
         )
 
-        print("Duplicate:", duplicate)
-
         if not duplicate:
-
-            print("Saving new memory...")
 
             save_memory(
                 db=db,
@@ -58,16 +98,8 @@ def process_chat(
                 ),
             )
 
-        else:
-
-            print("Skipping duplicate memory.")
-
-    else:
-
-        print("No memory extracted.")
-
     # ----------------------------------
-    # Step 3: Retrieve relevant memories
+    # Long-Term Memory
     # ----------------------------------
 
     memories = search_memories(
@@ -75,8 +107,6 @@ def process_chat(
         user_id=user_id,
         limit=5,
     )
-
-    print(f"Retrieved {len(memories)} relevant memories.")
 
     if memories:
 
@@ -90,24 +120,43 @@ def process_chat(
         memory_context = "No relevant memories."
 
     # ----------------------------------
-    # Step 4: Build prompt
+    # Conversation History
     # ----------------------------------
 
-    prompt = f"""
-You are AIPOS, a personal AI operating system.
+    history = MessageService.list_messages(
+        db=db,
+        conversation_id=conversation_id,
+    )
 
-Relevant memories:
-{memory_context}
+    # ----------------------------------
+    # Prompt Builder
+    # ----------------------------------
 
-User:
-{request.message}
-
-Answer naturally while using the relevant memories whenever appropriate.
-"""
+    prompt = build_prompt(
+        conversation_messages=history.messages,
+        memory_context=memory_context,
+        current_message=request.message,
+    )
 
     print("Sending prompt to Gemini...")
-    print("====================================\n")
 
-    response = ai_manager.chat(prompt)
+    response = ai_manager.chat(
+        prompt
+    )
 
-    return response
+    # ----------------------------------
+    # Save assistant response
+    # ----------------------------------
+
+    MessageService.create_message(
+        db=db,
+        conversation_id=conversation_id,
+        data=MessageCreate(
+            role="assistant",
+            content=response,
+        ),
+    )
+
+    print("========== DONE ==========\n")
+
+    return response, conversation_id

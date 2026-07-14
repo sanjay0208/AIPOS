@@ -46,3 +46,5 @@ class MessageResponse(BaseModel):
 
 class MessageListResponse(BaseModel):
     messages: list[MessageResponse]
+class ConversationUpdate(BaseModel):
+    title: str

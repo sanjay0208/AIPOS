@@ -1,3 +1,4 @@
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.database.models.conversation import Conversation
@@ -40,6 +41,22 @@ class ConversationRepository:
         return (
             db.query(Conversation)
             .filter(Conversation.user_id == user_id)
+            .order_by(Conversation.updated_at.desc())
+            .all()
+        )
+
+    @staticmethod
+    def search(
+        db: Session,
+        user_id: int,
+        query: str,
+    ) -> list[Conversation]:
+        return (
+            db.query(Conversation)
+            .filter(
+                Conversation.user_id == user_id,
+                Conversation.title.ilike(f"%{query}%"),
+            )
             .order_by(Conversation.updated_at.desc())
             .all()
         )

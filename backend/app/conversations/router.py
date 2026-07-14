@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
@@ -47,6 +47,22 @@ def list_conversations(
     return ConversationService.list_conversations(
         db=db,
         user_id=current_user.id,
+    )
+
+
+@router.get(
+    "/search",
+    response_model=ConversationListResponse,
+)
+def search_conversations(
+    q: str = Query(..., description="Search conversation title"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return ConversationService.search_conversations(
+        db=db,
+        user_id=current_user.id,
+        query=q,
     )
 
 

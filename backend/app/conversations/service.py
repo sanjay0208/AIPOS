@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from app.conversations.repository import ConversationRepository
 from app.conversations.schemas import (
     ConversationCreate,
-    ConversationResponse,
     ConversationListResponse,
+    ConversationResponse,
 )
 
 
@@ -46,6 +46,25 @@ class ConversationService:
         conversations = ConversationRepository.get_all_by_user(
             db=db,
             user_id=user_id,
+        )
+
+        return ConversationListResponse(
+            conversations=[
+                ConversationResponse.model_validate(c)
+                for c in conversations
+            ]
+        )
+
+    @staticmethod
+    def search_conversations(
+        db: Session,
+        user_id: int,
+        query: str,
+    ) -> ConversationListResponse:
+        conversations = ConversationRepository.search(
+            db=db,
+            user_id=user_id,
+            query=query,
         )
 
         return ConversationListResponse(

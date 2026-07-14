@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.chat.schemas import ChatRequest, ChatResponse
-from app.chat.service import process_chat
+from app.chat.chat_service import ChatService
 from app.database.models.user import User
 from app.database.session import get_db
 
@@ -22,7 +22,7 @@ def chat(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    response = process_chat(
+    response = ChatService.chat(
         db=db,
         request=request,
         user_id=current_user.id,

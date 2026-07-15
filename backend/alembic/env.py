@@ -6,7 +6,9 @@ from sqlalchemy import pool
 from alembic import context
 
 from app.database.base import Base
-from app.database.models.user import User
+
+# Import all models so Alembic detects them
+from app.database import models
 
 config = context.config
 
@@ -17,7 +19,7 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode."""
+    """Run migrations in offline mode."""
 
     url = config.get_main_option("sqlalchemy.url")
 
@@ -26,6 +28,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
     )
 
     with context.begin_transaction():
@@ -33,7 +36,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
+    """Run migrations in online mode."""
 
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
@@ -42,6 +45,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
+
         context.configure(
             connection=connection,
             target_metadata=target_metadata,

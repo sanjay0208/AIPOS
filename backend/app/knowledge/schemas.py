@@ -3,6 +3,10 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
+# =====================================================
+# Create Document
+# =====================================================
+
 class DocumentCreate(BaseModel):
     title: str
     filename: str
@@ -10,6 +14,10 @@ class DocumentCreate(BaseModel):
     size: int
     storage_path: str
 
+
+# =====================================================
+# Document Response
+# =====================================================
 
 class DocumentResponse(BaseModel):
     id: int
@@ -22,13 +30,24 @@ class DocumentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
 
+
+# =====================================================
+# Upload Response
+# =====================================================
 
 class DocumentUploadResponse(BaseModel):
     document: DocumentResponse
     text: str
+    chunks: int
 
+
+# =====================================================
+# List Response
+# =====================================================
 
 class DocumentListResponse(BaseModel):
     documents: list[DocumentResponse]

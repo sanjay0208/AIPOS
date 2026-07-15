@@ -1,6 +1,7 @@
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
+from app.knowledge.chunker import DocumentChunker
 from app.knowledge.parser import DocumentParser
 from app.knowledge.repository import DocumentRepository
 from app.knowledge.schemas import (
@@ -13,6 +14,10 @@ from app.knowledge.storage import StorageService
 
 class DocumentService:
 
+    # =====================================================
+    # Upload Document
+    # =====================================================
+
     @staticmethod
     async def upload_document(
         db: Session,
@@ -21,7 +26,15 @@ class DocumentService:
         file: UploadFile,
     ) -> dict:
 
+        # -----------------------------
+        # Save uploaded file
+        # -----------------------------
+
         storage_path, size = await StorageService.save_file(file)
+
+        # -----------------------------
+        # Save document metadata
+        # -----------------------------
 
         document = DocumentRepository.create(
             db=db,
@@ -33,15 +46,45 @@ class DocumentService:
             storage_path=storage_path,
         )
 
+        # -----------------------------
+        # Extract text
+        # -----------------------------
+
         extracted_text = DocumentParser.parse(
             storage_path,
             file.content_type,
         )
 
+        # -----------------------------
+        # Split into chunks
+        # -----------------------------
+
+        chunks = DocumentChunker.split(
+            extracted_text
+        )
+
+        # -----------------------------
+        # Save chunks
+        # -----------------------------
+
+        for index, chunk in enumerate(chunks):
+
+            DocumentRepository.create_chunk(
+                db=db,
+                document_id=document.id,
+                chunk_index=index,
+                content=chunk,
+            )
+
         return {
             "document": DocumentResponse.model_validate(document),
             "text": extracted_text,
+            "chunks": len(chunks),
         }
+
+    # =====================================================
+    # Create Metadata Only
+    # =====================================================
 
     @staticmethod
     def create_document(
@@ -62,6 +105,10 @@ class DocumentService:
 
         return DocumentResponse.model_validate(document)
 
+    # =====================================================
+    # Get Document
+    # =====================================================
+
     @staticmethod
     def get_document(
         db: Session,
@@ -77,6 +124,10 @@ class DocumentService:
             return None
 
         return DocumentResponse.model_validate(document)
+
+    # =====================================================
+    # List Documents
+    # =====================================================
 
     @staticmethod
     def list_documents(
@@ -95,6 +146,10 @@ class DocumentService:
                 for document in documents
             ]
         )
+
+    # =====================================================
+    # Delete Document
+    # =====================================================
 
     @staticmethod
     def delete_document(

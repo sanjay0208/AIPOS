@@ -1,9 +1,14 @@
 from sqlalchemy.orm import Session
 
 from app.database.models.document import Document
+from app.database.models.document_chunk import DocumentChunk
 
 
 class DocumentRepository:
+
+    # =====================================================
+    # Documents
+    # =====================================================
 
     @staticmethod
     def create(
@@ -47,12 +52,12 @@ class DocumentRepository:
     def get_all_by_user(
         db: Session,
         user_id: int,
-    ) -> list[Document]:
+    ):
 
         return (
             db.query(Document)
             .filter(Document.user_id == user_id)
-            .order_by(Document.updated_at.desc())
+            .order_by(Document.created_at.desc())
             .all()
         )
 
@@ -60,7 +65,46 @@ class DocumentRepository:
     def delete(
         db: Session,
         document: Document,
-    ) -> None:
+    ):
 
         db.delete(document)
         db.commit()
+
+    # =====================================================
+    # Document Chunks
+    # =====================================================
+
+    @staticmethod
+    def create_chunk(
+        db: Session,
+        document_id: int,
+        chunk_index: int,
+        content: str,
+    ) -> DocumentChunk:
+
+        chunk = DocumentChunk(
+            document_id=document_id,
+            chunk_index=chunk_index,
+            content=content,
+        )
+
+        db.add(chunk)
+        db.commit()
+        db.refresh(chunk)
+
+        return chunk
+
+    @staticmethod
+    def list_chunks(
+        db: Session,
+        document_id: int,
+    ):
+
+        return (
+            db.query(DocumentChunk)
+            .filter(
+                DocumentChunk.document_id == document_id
+            )
+            .order_by(DocumentChunk.chunk_index)
+            .all()
+        )

@@ -71,7 +71,7 @@ class DocumentRepository:
         db.commit()
 
     # =====================================================
-    # Document Chunks
+    # Chunks
     # =====================================================
 
     @staticmethod
@@ -95,10 +95,24 @@ class DocumentRepository:
         return chunk
 
     @staticmethod
+    def update_chunk_vector(
+        db: Session,
+        chunk: DocumentChunk,
+        vector_id: str,
+    ) -> DocumentChunk:
+
+        chunk.vector_id = vector_id
+
+        db.commit()
+        db.refresh(chunk)
+
+        return chunk
+
+    @staticmethod
     def list_chunks(
         db: Session,
         document_id: int,
-    ):
+    ) -> list[DocumentChunk]:
 
         return (
             db.query(DocumentChunk)

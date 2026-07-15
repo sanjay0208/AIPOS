@@ -32,8 +32,9 @@ def save_memory(
         saved_memory.content
     )
 
-    # Step 3: Store in Qdrant
+    # Step 3: Store embedding in Qdrant
     vector_id = store_embedding(
+        collection_name="memories",
         embedding=embedding,
         payload={
             "memory_id": saved_memory.id,

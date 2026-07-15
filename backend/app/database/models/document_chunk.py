@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -29,6 +29,11 @@ class DocumentChunk(Base):
     content: Mapped[str] = mapped_column(
         Text,
         nullable=False,
+    )
+
+    vector_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(

@@ -3,10 +3,6 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
-# =====================================================
-# Create Document
-# =====================================================
-
 class DocumentCreate(BaseModel):
     title: str
     filename: str
@@ -14,10 +10,6 @@ class DocumentCreate(BaseModel):
     size: int
     storage_path: str
 
-
-# =====================================================
-# Document Response
-# =====================================================
 
 class DocumentResponse(BaseModel):
     id: int
@@ -35,19 +27,12 @@ class DocumentResponse(BaseModel):
     )
 
 
-# =====================================================
-# Upload Response
-# =====================================================
-
 class DocumentUploadResponse(BaseModel):
     document: DocumentResponse
     text: str
     chunks: int
+    indexed_chunks: int
 
-
-# =====================================================
-# List Response
-# =====================================================
 
 class DocumentListResponse(BaseModel):
     documents: list[DocumentResponse]

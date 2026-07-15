@@ -1,6 +1,7 @@
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
+from app.embeddings.service import generate_embedding
 from app.knowledge.chunker import DocumentChunker
 from app.knowledge.parser import DocumentParser
 from app.knowledge.repository import DocumentRepository
@@ -10,13 +11,13 @@ from app.knowledge.schemas import (
     DocumentResponse,
 )
 from app.knowledge.storage import StorageService
+from app.vector.service import (
+    create_collection,
+    store_embedding,
+)
 
 
 class DocumentService:
-
-    # =====================================================
-    # Upload Document
-    # =====================================================
 
     @staticmethod
     async def upload_document(
@@ -26,15 +27,21 @@ class DocumentService:
         file: UploadFile,
     ) -> dict:
 
-        # -----------------------------
+        # ---------------------------------
+        # Ensure Qdrant collection exists
+        # ---------------------------------
+
+        create_collection("documents")
+
+        # ---------------------------------
         # Save uploaded file
-        # -----------------------------
+        # ---------------------------------
 
         storage_path, size = await StorageService.save_file(file)
 
-        # -----------------------------
+        # ---------------------------------
         # Save document metadata
-        # -----------------------------
+        # ---------------------------------
 
         document = DocumentRepository.create(
             db=db,
@@ -46,45 +53,69 @@ class DocumentService:
             storage_path=storage_path,
         )
 
-        # -----------------------------
-        # Extract text
-        # -----------------------------
+        # ---------------------------------
+        # Parse document
+        # ---------------------------------
 
         extracted_text = DocumentParser.parse(
             storage_path,
             file.content_type,
         )
 
-        # -----------------------------
+        # ---------------------------------
         # Split into chunks
-        # -----------------------------
+        # ---------------------------------
 
         chunks = DocumentChunker.split(
             extracted_text
         )
 
-        # -----------------------------
-        # Save chunks
-        # -----------------------------
+        indexed_chunks = 0
 
-        for index, chunk in enumerate(chunks):
+        # ---------------------------------
+        # Process every chunk
+        # ---------------------------------
 
-            DocumentRepository.create_chunk(
+        for index, chunk_text in enumerate(chunks):
+
+            chunk = DocumentRepository.create_chunk(
                 db=db,
                 document_id=document.id,
                 chunk_index=index,
-                content=chunk,
+                content=chunk_text,
             )
 
+            embedding = generate_embedding(
+                chunk_text
+            )
+
+            vector_id = store_embedding(
+                collection_name="documents",
+                embedding=embedding,
+                payload={
+                    "document_id": document.id,
+                    "chunk_id": chunk.id,
+                    "chunk_index": index,
+                    "content": chunk_text,
+                },
+            )
+
+            DocumentRepository.update_chunk_vector(
+                db=db,
+                chunk=chunk,
+                vector_id=vector_id,
+            )
+
+            indexed_chunks += 1
+
         return {
-            "document": DocumentResponse.model_validate(document),
+            "document": DocumentResponse.model_validate(
+                document
+            ),
             "text": extracted_text,
             "chunks": len(chunks),
+            "indexed_chunks": indexed_chunks,
         }
-
-    # =====================================================
-    # Create Metadata Only
-    # =====================================================
 
     @staticmethod
     def create_document(
@@ -103,11 +134,9 @@ class DocumentService:
             storage_path=data.storage_path,
         )
 
-        return DocumentResponse.model_validate(document)
-
-    # =====================================================
-    # Get Document
-    # =====================================================
+        return DocumentResponse.model_validate(
+            document
+        )
 
     @staticmethod
     def get_document(
@@ -123,11 +152,9 @@ class DocumentService:
         if document is None:
             return None
 
-        return DocumentResponse.model_validate(document)
-
-    # =====================================================
-    # List Documents
-    # =====================================================
+        return DocumentResponse.model_validate(
+            document
+        )
 
     @staticmethod
     def list_documents(
@@ -142,14 +169,10 @@ class DocumentService:
 
         return DocumentListResponse(
             documents=[
-                DocumentResponse.model_validate(document)
-                for document in documents
+                DocumentResponse.model_validate(d)
+                for d in documents
             ]
         )
-
-    # =====================================================
-    # Delete Document
-    # =====================================================
 
     @staticmethod
     def delete_document(

@@ -6,6 +6,8 @@ from sqlalchemy import pool
 from alembic import context
 
 from app.database.base import Base
+from app.database.models.document import Document
+from app.database.models.document_chunk import DocumentChunk
 
 # Import all models so Alembic detects them
 from app.database import models
